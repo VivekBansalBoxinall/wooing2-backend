@@ -81,6 +81,28 @@ export function initializeSocket(server) {
       callback({ messageId });
     });
 
+    // Handle call event
+    socket.on("sendCall", ({ to, data }, callback) => {
+      console.log(`Sending call to ${to}:`, data);
+      const senderId = socketUserMap[socket.id];
+      if (!senderId) return callback({ error: "User not authenticated" });
+
+      // also send this message back to the sender
+      io.to(senderId).emit("newCall", {
+        to: to,
+        from: senderId,
+        data,
+      });
+
+      // Send to recipient if online
+      io.to(to).emit("newCall", {
+        from: senderId,
+        data,
+      });
+
+      callback({ success: true });
+    });
+
     // Handle disconnection
     socket.on("disconnect", () => {
       const userId = socketUserMap[socket.id];
