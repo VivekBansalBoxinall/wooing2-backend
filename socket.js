@@ -1,7 +1,9 @@
 import { Server } from "socket.io";
+import { sendPushNotification } from "./notificationService.js";
 
 // In-memory user socket mapping
 const socketUserMap = {}; // { socketId: userId }
+const userTokenMap = {}; // { userId: deviceToken }
 
 export function initializeSocket(server) {
   const io = new Server(server, {
@@ -19,9 +21,17 @@ export function initializeSocket(server) {
     console.log(`Total connections: ${io.engine.clientsCount}`);
 
     // Authenticate user
-    socket.on("authenticate", ({ userId, groupIds }, callback) => {
+    socket.on("authenticate", ({ userId, groupIds, deviceToken }, callback) => {
       // Store socket mapping
       socketUserMap[socket.id] = userId;
+
+      console.log(
+        `User ${userId} authenticated with socket ID: ${socket.id}, groupIds: ${groupIds}, deviceToken: ${deviceToken}`
+      );
+
+      if (deviceToken) {
+        userTokenMap[userId] = deviceToken;
+      }
 
       // Join personal room for direct messages
       socket.join(userId);
@@ -82,10 +92,14 @@ export function initializeSocket(server) {
     });
 
     // Handle call event
-    socket.on("sendCall", ({ to, data }, callback) => {
+    socket.on("sendCall", async ({ to, data }, callback) => {
       console.log(`Sending call to ${to}:`, data);
       const senderId = socketUserMap[socket.id];
+      const receiverDeviceToken = userTokenMap[to];
       if (!senderId) return callback({ error: "User not authenticated" });
+      if (!to) return callback({ error: "Recipient not specified" });
+      if (!receiverDeviceToken)
+        return callback({ error: "Device token not found" });
 
       // also send this message back to the sender
       // io.to(senderId).emit("newCall", {
@@ -95,11 +109,22 @@ export function initializeSocket(server) {
       // });
 
       // Send to recipient if online
-      io.to(to).emit("newCall", {
-        from: senderId,
-        data,
-      });
+      // io.to(to).emit("newCall", {
+      //   from: senderId,
+      //   data,
+      // });
 
+      // Send push notification to recipient
+      await sendPushNotification({
+        token: receiverDeviceToken,
+        title: `Incoming call from ${data.caller.name}`,
+        body: "Tap to answer the call",
+        data: {
+          type: "CALL",
+          callData: data,
+          senderId: senderId.toString(),
+        },
+      });
       callback({ success: true });
     });
 
