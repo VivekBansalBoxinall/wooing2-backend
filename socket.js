@@ -88,11 +88,11 @@ export function initializeSocket(server) {
       if (!senderId) return callback({ error: "User not authenticated" });
 
       // also send this message back to the sender
-      io.to(senderId).emit("newCall", {
-        to: to,
-        from: senderId,
-        data,
-      });
+      // io.to(senderId).emit("newCall", {
+      //   to: to,
+      //   from: senderId,
+      //   data,
+      // });
 
       // Send to recipient if online
       io.to(to).emit("newCall", {
