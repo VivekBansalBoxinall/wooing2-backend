@@ -8,27 +8,9 @@
 
 import admin from "firebase-admin";
 import dotenv from "dotenv";
-// import fs from "fs";
-// import path from "path";
-// import { fileURLToPath } from "url";
-
 dotenv.config();
 
-// // Get current file directory (for ES modules)
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// // Read and parse the credentials file
-// const serviceAccountPath = path.join(__dirname, "firebase-credentials.json");
-// const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
-
-// // Initialize Firebase Admin SDK
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount),
-// });
-// Parse credentials from environment variables
-
-const serviceAccount = {
+const credentials = {
   type: process.env.FIREBASE_TYPE,
   project_id: process.env.FIREBASE_PROJECT_ID,
   private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
@@ -44,7 +26,7 @@ const serviceAccount = {
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(credentials),
 });
 
 /**
